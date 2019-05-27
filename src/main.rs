@@ -1,6 +1,8 @@
 extern crate zip;
+extern crate regex;
 
 use zip::*;
+use regex::Regex;
 use std::fs;
 use std::io::*;
 use std::io::BufReader;
@@ -40,13 +42,34 @@ fn real_main() -> i32 {
                    let mut buff_xml = Vec::with_capacity(war_file.size().try_into().unwrap());
                    copy(&mut war_file, &mut buff_xml).unwrap();
                    let web_xml = String::from_utf8_lossy(&buff_xml);
-                   println!("{}",web_xml);
-                   return 0;
+                   let ans = extract_icargo_version(web_xml.to_string());
+                   return ans;
                }
            }
            
         }
         
     }
-    return 1;
+    return -20;
+}
+
+fn extract_icargo_version(web_xml : String) -> i32 {
+    let re = Regex::new("web.version.([A-Za-z0-9._]*)").unwrap();
+    let caps = re.captures(&web_xml);
+    match caps {
+        Some(c) => { println!("{}", c.get(1).unwrap().as_str());
+                    return 0;
+                    }
+        None => return -10
+    }
+}
+
+#[test]
+fn test_regex(){
+    let fname = std::path::Path::new("./web.xml");
+    let zip_file = fs::File::open(&fname).unwrap();
+    let mut reader = BufReader::with_capacity(10 * 1024, zip_file);
+    let mut xml_file = String::new();
+    reader.read_to_string(&mut xml_file);
+    extract_icargo_version(xml_file);
 }
